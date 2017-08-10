@@ -1,5 +1,5 @@
-ztsu/reacon
-===========
+Reacon
+======
 
 The simplest PSR-15 complaint middleware runner on top of [ztsu/pipe](https://github.com/ztsu/pipe).
 
@@ -9,13 +9,19 @@ for recommendations that defines the interface for server middleware-component c
 [http-interop/http-middleware](https://github.com/http-interop/http-middleware) that contains last version
 of PSR-15 interfaces.
 
-There are a few of another PSR-15 compatible dispatchers.
-[Middleman](https://github.com/mindplay-dk/middleman) is the best known.
- 
-Also there are a lot of PSR-15 middleware-components collected
-in the [middlewares/psr15-middlewares](https://github.com/middlewares/psr15-middlewares).
+There are a few of another PSR-15 compatible dispatchers. [Middleman](https://github.com/mindplay-dk/middleman) is the 
+best known. Also there are a lot of PSR-15 middleware-components collected in the 
+[middlewares/psr15-middlewares](https://github.com/middlewares/psr15-middlewares).
 
-## A simple example
+## Installation
+
+Via [Composer](https://getcomposer.org/):
+
+```bash
+$ composer require ztsu/reacon
+```
+
+## Usage
 
 ```php
 <?php
@@ -47,14 +53,6 @@ $response = $reacon->run($request);
 
 (new Zend\Diactoros\Response\SapiEmitter)->emit($response);
 
-```
-
-## Installation
-
-Via [Composer](https://getcomposer.org/):
-
-```bash
-$ composer require "ztsu/reacon"
 ```
 
 ## License
