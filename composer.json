@@ -1,6 +1,10 @@
 {
     "name": "ztsu/reacon",
+    "type": "library",
     "description": "PSR-7 middleware runner compatible with PSR-15",
+    "keywords": [
+        "psr-7", "psr-15", "http", "middleware"
+    ],
     "license": "MIT",
     "authors": [
         {
