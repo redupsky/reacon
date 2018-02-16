@@ -3,7 +3,7 @@ Reacon
 
 The simplest PSR-15 complaint middleware runner on top of [ztsu/pipe](https://github.com/ztsu/pipe).
 
-The [PSR-15](https://github.com/php-fig/fig-standards/tree/master/proposed/http-middleware) providers a standard
+The [PSR-15](https://www.php-fig.org/psr/psr-15/) providers a standard
 for recommendations that defines the interface for server middleware-component compatible with
 [PSR-7 HTTP Messages](http://www.php-fig.org/psr/psr-7/). The standard is just a draft. Reacon is using
 [http-interop/http-middleware](https://github.com/http-interop/http-middleware) that contains last version
