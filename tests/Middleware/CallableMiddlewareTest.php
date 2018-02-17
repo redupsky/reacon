@@ -5,6 +5,7 @@ namespace Ztsu\Reacon\Middleware;
 use Interop\Http\ServerMiddleware\DelegateInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
+use Psr\Http\Server\RequestHandlerInterface;
 use Ztsu\Reacon\Reacon;
 
 class CallableMiddlewareTest extends \PHPUnit_Framework_TestCase
@@ -20,7 +21,7 @@ class CallableMiddlewareTest extends \PHPUnit_Framework_TestCase
             ->method("__invoke")
             ->withConsecutive(
                 $request,
-                $this->isInstanceOf(DelegateInterface::class)
+                $this->isInstanceOf(RequestHandlerInterface::class)
             )
             ->willReturn(
                 $this->createMock(ResponseInterface::class)
@@ -30,7 +31,7 @@ class CallableMiddlewareTest extends \PHPUnit_Framework_TestCase
             new CallableMiddleware($middleware)
         ]);
 
-        $response = $reacon->run($request);
+        $response = $reacon->handle($request);
 
         $this->assertInstanceOf(ResponseInterface::class, $response);
     }

@@ -4,10 +4,18 @@ namespace Ztsu\Reacon;
 
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\ResponseInterface;
-use Interop\Http\ServerMiddleware\MiddlewareInterface;
+use Psr\Http\Server\MiddlewareInterface;
+use Psr\Http\Server\RequestHandlerInterface;
 
 class ReaconTest extends \PHPUnit_Framework_TestCase
 {
+    public function testShouldBeServerRequestHandler()
+    {
+        $reacon = new Reacon();
+
+        $this->assertInstanceOf(RequestHandlerInterface::class, $reacon);
+    }
+
     public function test()
     {
         $request = $this->createMock(ServerRequestInterface::class);
@@ -18,14 +26,13 @@ class ReaconTest extends \PHPUnit_Framework_TestCase
             ->willReturnCallback(
                 function(
                     \Psr\Http\Message\ServerRequestInterface $request,
-                    \Interop\Http\ServerMiddleware\DelegateInterface $delegate
+                    RequestHandlerInterface $handler
                 ) {
-                    return $delegate->process($request);
+                    return $handler->handle($request);
                 }
             );
 
         $middleware2 = $this->createMock(MiddlewareInterface::class);
-
         $middleware2->expects($this->once())
             ->method("process")
             ->with($request)
@@ -39,8 +46,15 @@ class ReaconTest extends \PHPUnit_Framework_TestCase
         $reacon->add($middleware1);
         $reacon->add($middleware2);
 
-        $response = $reacon->run($request);
+        $response = $reacon->handle($request);
 
         $this->assertInstanceOf(ResponseInterface::class, $response);
+    }
+
+    public function testShouldBeMiddleware()
+    {
+        $reacon = new Reacon();
+
+        $this->assertInstanceOf(MiddlewareInterface::class, $reacon);
     }
 }

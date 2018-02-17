@@ -14,8 +14,9 @@
     ],
     "require": {
         "psr/http-message": "^1.0",
-        "ztsu/pipe": "^1.0",
-        "http-interop/http-middleware": "^0.4.1"
+        "psr/http-server-handler": "^1.0",
+        "psr/http-server-middleware": "^1.0",
+        "ztsu/pipe": "^1.0"
     },
     "require-dev": {
         "zendframework/zend-diactoros": "^1.3",

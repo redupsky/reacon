@@ -2,18 +2,18 @@
 
 namespace Ztsu\Reacon;
 
-use Interop\Http\ServerMiddleware\DelegateInterface;
+use Psr\Http\Server\MiddlewareInterface;
+use Psr\Http\Server\RequestHandlerInterface;
 use Ztsu\Pipe\Pipeline;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\ResponseInterface;
-use Interop\Http\ServerMiddleware\MiddlewareInterface;
 
 /**
  * Reacon
  *
  * Runs pipeline of middlewares
  */
-class Reacon implements MiddlewareInterface
+class Reacon implements RequestHandlerInterface, MiddlewareInterface
 {
     /**
      * @var \Ztsu\Pipe\Pipeline
@@ -21,26 +21,26 @@ class Reacon implements MiddlewareInterface
     private $pipeline;
 
     /**
-     * @param []MiddlewareInterface $middleware
+     * @param []MiddlewareInterface $middlewares
      */
-    public function __construct(array $middleware = [])
+    public function __construct(array $middlewares = [])
     {
         $this->pipeline = new Pipeline();
 
-        foreach ($middleware as $middleware) {
+        foreach ($middlewares as $middleware) {
             $this->add($middleware);
         }
     }
 
     /**
      * @param MiddlewareInterface $middleware
-     * @return $this
+     * @return Reacon
      */
-    public function add(MiddlewareInterface $middleware)
+    public function add(MiddlewareInterface $middleware): Reacon
     {
         $this->pipeline->add(
             function(ServerRequestInterface $request, callable $next) use ($middleware) {
-                return $middleware->process($request, new DelegateAdapter($next));
+                return $middleware->process($request, new HandlerAdapter($next));
             }
         );
 
@@ -51,26 +51,25 @@ class Reacon implements MiddlewareInterface
      * @param ServerRequestInterface $request
      * @return ResponseInterface
      */
-    public function run(ServerRequestInterface $request)
+    public function handle(ServerRequestInterface $request): ResponseInterface
     {
         return $this->pipeline->run($request);
     }
 
-    /*
+    /**
      * @param ServerRequestInterface $request
-     * @param DelegateInterface $delegate
-     *
+     * @param RequestHandlerInterface $handler
      * @return ResponseInterface
      */
-    public function process(ServerRequestInterface $request, DelegateInterface $delegate)
+    public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
-        $result = $this->run($request);
+        $result = $this->handle($request);
 
         if ($result instanceof ResponseInterface) {
             return $result;
-
         }
-        return $delegate->process($result);
+
+        return $handler->handle($result);
     }
 }
 

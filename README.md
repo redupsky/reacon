@@ -5,9 +5,7 @@ The simplest PSR-15 complaint middleware runner on top of [ztsu/pipe](https://gi
 
 The [PSR-15](https://www.php-fig.org/psr/psr-15/) providers a standard
 for recommendations that defines the interface for server middleware-component compatible with
-[PSR-7 HTTP Messages](http://www.php-fig.org/psr/psr-7/). The standard is just a draft. Reacon is using
-[http-interop/http-middleware](https://github.com/http-interop/http-middleware) that contains last version
-of PSR-15 interfaces.
+[PSR-7 HTTP Messages](http://www.php-fig.org/psr/psr-7/).
 
 There are a few of another PSR-15 compatible dispatchers. [Middleman](https://github.com/mindplay-dk/middleman) is the 
 best known. Also there are a lot of PSR-15 middleware-components collected in the 
@@ -26,19 +24,23 @@ $ composer require ztsu/reacon
 ```php
 <?php
 
-class HelloMiddleware implements Interop\Http\ServerMiddleware\MiddlewareInterface
+use Psr\Http\Message\ResponseInterface;
+use Psr\Http\Message\ServerRequestInterface;
+use Psr\Http\Server\MiddlewareInterface;
+use Psr\Http\Server\RequestHandlerInterface;
+
+class HelloMiddleware implements MiddlewareInterface
 {
     public function process(
-        Psr\Http\Message\ServerRequestInterface $request,
-        Interop\Http\ServerMiddleware\DelegateInterface $delegate
-    ) {
+        ServerRequestInterface $request,
+        RequestHandlerInterface $handler
+    ): ResponseInterface {
         $response = new Zend\Diactoros\Response();
 
         $response->getBody()->write("Hello, World!");
 
         return $response;
     }
-
 }
 
 $reacon = new Ztsu\Reacon\Reacon(
@@ -49,7 +51,7 @@ $reacon = new Ztsu\Reacon\Reacon(
 
 $request = Zend\Diactoros\ServerRequestFactory::fromGlobals();
 
-$response = $reacon->run($request);
+$response = $reacon->handle($request);
 
 (new Zend\Diactoros\Response\SapiEmitter)->emit($response);
 

@@ -2,15 +2,15 @@
 
 namespace Ztsu\Reacon;
 
-use Interop\Http\ServerMiddleware\DelegateInterface;
+use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
+use Psr\Http\Server\RequestHandlerInterface;
 
 /**
- * Delegate adapter
+ * Adapter that used to
  *
- * Adapts callable to DelegateInterface
  */
-class DelegateAdapter implements DelegateInterface
+class HandlerAdapter implements RequestHandlerInterface
 {
     /**
      * @var callable
@@ -27,10 +27,10 @@ class DelegateAdapter implements DelegateInterface
 
     /**
      * @param ServerRequestInterface $request
-     * @return mixed
+     * @return ResponseInterface
      */
-    public function process(ServerRequestInterface $request)
+    public function handle(ServerRequestInterface $request): ResponseInterface
     {
-        return $this->callable->__invoke($request);
+        return call_user_func($this->callable, $request);
     }
 }

@@ -2,13 +2,24 @@
 
 namespace Ztsu\Reacon\Middleware;
 
-use Interop\Http\ServerMiddleware\DelegateInterface;
-use Interop\Http\ServerMiddleware\MiddlewareInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
+use Psr\Http\Server\MiddlewareInterface;
+use Psr\Http\Server\RequestHandlerInterface;
 
+/**
+ * Allows use callable as a Middleware
+ */
 class CallableMiddleware implements MiddlewareInterface
 {
+    /**
+     * @var callable
+     */
+    private $callback;
+
+    /**
+     * @param callable $callback
+     */
     public function __construct(callable $callback)
     {
         $this->callback = $callback;
@@ -16,12 +27,12 @@ class CallableMiddleware implements MiddlewareInterface
 
     /**
      * @param ServerRequestInterface $request
-     * @param DelegateInterface $delegate
+     * @param RequestHandlerInterface $handler
      * @return ResponseInterface
      */
-    public function process(ServerRequestInterface $request, DelegateInterface $delegate)
+    public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
-        return call_user_func($this->callback, $request, $delegate);
+        return call_user_func($this->callback, $request, $handler);
     }
 
 }
