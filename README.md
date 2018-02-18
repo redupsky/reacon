@@ -2,6 +2,7 @@ Reacon
 ======
 
 [![Build Status](https://travis-ci.org/ztsu/reacon.svg?branch=master)](https://travis-ci.org/ztsu/reacon)
+[![Coverage Status](https://coveralls.io/repos/github/ztsu/reacon/badge.svg?branch=master)](https://coveralls.io/github/ztsu/reacon?branch=master)
 
 The simplest PSR-15 complaint middleware runner on top of [ztsu/pipe](https://github.com/ztsu/pipe).
 
