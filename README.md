@@ -1,6 +1,8 @@
 Reacon
 ======
 
+[![Build Status](https://travis-ci.org/ztsu/reacon.svg?branch=master)](https://travis-ci.org/ztsu/reacon)
+
 The simplest PSR-15 complaint middleware runner on top of [ztsu/pipe](https://github.com/ztsu/pipe).
 
 The [PSR-15](https://www.php-fig.org/psr/psr-15/) providers a standard
