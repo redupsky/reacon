@@ -34,8 +34,8 @@
         }
     },
     "scripts": {
-        "test": "phpunit tests/",
-        "coverage": "phpunit tests/ --coverage-clover clover.xml"
+        "test": "phpunit",
+        "coverage": "phpunit --coverage-clover clover.xml"
     },
     "minimum-stability": "dev",
     "prefer-stable" : true
