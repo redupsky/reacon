@@ -2,9 +2,10 @@
 
 namespace Ztsu\Reacon;
 
+use InvalidArgumentException;
+use LogicException;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
-use Ztsu\Pipe\Pipeline;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\ResponseInterface;
 
@@ -16,35 +17,31 @@ use Psr\Http\Message\ResponseInterface;
 class Reacon implements RequestHandlerInterface, MiddlewareInterface
 {
     /**
-     * @var \Ztsu\Pipe\Pipeline
+     * @var \SplObjectStorage
      */
-    private $pipeline;
+    private $stages;
 
     /**
-     * @param []MiddlewareInterface $middlewares
+     * @var bool
      */
-    public function __construct(array $middlewares = [])
+    private $rewinded;
+
+    /**
+     * @param MiddlewareInterface[] ...$middlewares
+     */
+    public function __construct(MiddlewareInterface ...$middlewares)
     {
-        $this->pipeline = new Pipeline();
+        $this->stages = new \SplObjectStorage;
+
+        if (empty($middlewares)) {
+            throw new InvalidArgumentException("Middleware pipeline is empty");
+        }
 
         foreach ($middlewares as $middleware) {
-            $this->add($middleware);
+            $this->stages->attach($middleware);
         }
-    }
 
-    /**
-     * @param MiddlewareInterface $middleware
-     * @return Reacon
-     */
-    public function add(MiddlewareInterface $middleware): Reacon
-    {
-        $this->pipeline->add(
-            function(ServerRequestInterface $request, callable $next) use ($middleware) {
-                return $middleware->process($request, new HandlerAdapter($next));
-            }
-        );
-
-        return $this;
+        $this->rewinded = false;
     }
 
     /**
@@ -53,7 +50,12 @@ class Reacon implements RequestHandlerInterface, MiddlewareInterface
      */
     public function handle(ServerRequestInterface $request): ResponseInterface
     {
-        return $this->pipeline->run($request);
+        if (!$this->rewinded) {
+            $this->rewinded = true;
+            $this->stages->rewind();
+        }
+
+        return $this->invokeStage($request);
     }
 
     /**
@@ -63,13 +65,35 @@ class Reacon implements RequestHandlerInterface, MiddlewareInterface
      */
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
-        $result = $this->handle($request);
-
-        if ($result instanceof ResponseInterface) {
-            return $result;
+        if ($handler instanceof MiddlewareInterface) {
+            $this->stages->attach($handler);
         }
 
-        return $handler->handle($result);
+        return $this->handle($request);
+    }
+
+    /**
+     * @param ServerRequestInterface $request
+     * @return ResponseInterface
+     */
+    private function invokeStage(ServerRequestInterface $request)
+    {
+        /**
+         * @var MiddlewareInterface $stage
+         */
+        $stage = $this->stages->current();
+
+        if (!$stage instanceof MiddlewareInterface) {
+            throw new LogicException("There is no more middleware in the pipeline");
+        }
+
+        $this->stages->next();
+
+        $result = $stage->process($request, clone $this);
+
+        $this->rewinded = false;
+
+        return $result;
     }
 }
 

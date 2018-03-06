@@ -2,6 +2,9 @@
 
 namespace Ztsu\Reacon;
 
+use InvalidArgumentException;
+use LogicException;
+use Mockery\Adapter\Phpunit\MockeryPHPUnitIntegration;
 use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Server\MiddlewareInterface;
@@ -9,113 +12,188 @@ use Psr\Http\Server\RequestHandlerInterface;
 
 class ReaconTest extends \PHPUnit_Framework_TestCase
 {
-    public function testShouldBeServerRequestHandler()
+    use MockeryPHPUnitIntegration;
+
+    public function testShouldBeNotInitiatedWithoutMiddleare()
     {
-        $reacon = new Reacon();
+        $this->expectException(InvalidArgumentException::class);
+
+        new Reacon();
+    }
+
+    public function testShouldBeServerRequestHandlerInstance()
+    {
+        $reacon = new Reacon(\Mockery::mock(MiddlewareInterface::class));
 
         $this->assertInstanceOf(RequestHandlerInterface::class, $reacon);
     }
 
-    public function test()
+    public function testShouldInvokeAllMiddlewareInTheRightOrder()
     {
-        $request = $this->createMock(ServerRequestInterface::class);
 
-        $middleware1 = $this->createMock(MiddlewareInterface::class);
-        $middleware1->expects($this->once())
-            ->method("process")
-            ->willReturnCallback(
-                function(
-                    \Psr\Http\Message\ServerRequestInterface $request,
-                    RequestHandlerInterface $handler
-                ) {
+        $middleware1 = \Mockery::mock(MiddlewareInterface::class)
+            ->shouldReceive("process")
+            ->once()
+            ->andReturnUsing(
+                function (ServerRequestInterface $request, RequestHandlerInterface $handler) {
+                return $handler->handle($request);
+                }
+            )
+            ->globally()->ordered()
+            ->getMock();
+
+        $middleware2 = \Mockery::mock(MiddlewareInterface::class)
+            ->shouldReceive("process")
+            ->once()
+            ->andReturnUsing(
+                function (ServerRequestInterface $request, RequestHandlerInterface $handler) {
                     return $handler->handle($request);
                 }
-            );
+            )
+            ->globally()->ordered()
+            ->getMock();
 
-        $middleware2 = $this->createMock(MiddlewareInterface::class);
-        $middleware2->expects($this->once())
-            ->method("process")
-            ->with($request)
-            ->willReturnCallback(
-                function() {
-                    return $this->createMock(ResponseInterface::class);
+        $middleware3 = \Mockery::mock(MiddlewareInterface::class)
+            ->shouldReceive("process")
+            ->once()
+            ->andReturnUsing(
+                function () {
+                    return \Mockery::mock(ResponseInterface::class);
                 }
-            );
+            )
+            ->globally()->ordered()
+            ->getMock();
 
-        $reacon = new Reacon();
-        $reacon->add($middleware1);
-        $reacon->add($middleware2);
+        $reacon = new Reacon($middleware1, $middleware2, $middleware3);
 
-        $response = $reacon->handle($request);
-
-        $this->assertInstanceOf(ResponseInterface::class, $response);
+        $reacon->handle(\Mockery::mock(ServerRequestInterface::class));
     }
 
-    public function testShouldBeMiddleware()
+    public function testShouldBeUsedMoreThanOnce()
     {
-        $reacon = new Reacon();
+        $middleware1 = \Mockery::mock(MiddlewareInterface::class)
+            ->shouldReceive("process")
+            ->twice()
+            ->andReturnUsing(
+                function (ServerRequestInterface $request, RequestHandlerInterface $handler) {
+                    return $handler->handle($request);
+                }
+            )
+            ->getMock();
+
+        $middleware2 = \Mockery::mock(MiddlewareInterface::class)
+            ->shouldReceive("process")
+            ->twice()
+            ->andReturnUsing(
+                function (ServerRequestInterface $request, RequestHandlerInterface $handler) {
+                    return $handler->handle($request);
+                }
+            )
+            ->getMock();
+
+        $middleware3 = \Mockery::mock(MiddlewareInterface::class)
+            ->shouldReceive("process")
+            ->twice()
+            ->andReturnUsing(
+                function () {
+                    return \Mockery::mock(ResponseInterface::class);
+                }
+            )
+            ->getMock();
+
+        $reacon = new Reacon($middleware1, $middleware2, $middleware3);
+
+        $reacon->handle(\Mockery::mock(ServerRequestInterface::class));
+        $reacon->handle(\Mockery::mock(ServerRequestInterface::class));
+    }
+
+    public function testShouldNotPassBeyondMiddlewareThatCreatesResponse()
+    {
+        $middleware1 = \Mockery::mock(MiddlewareInterface::class)
+            ->shouldReceive("process")
+            ->once()
+            ->andReturnUsing(
+                function (ServerRequestInterface $request, RequestHandlerInterface $handler) {
+                    return $handler->handle($request);
+                }
+            )
+            ->getMock();
+
+        $middleware2 = \Mockery::mock(MiddlewareInterface::class)
+            ->shouldReceive("process")
+            ->once()
+            ->andReturnUsing(
+                function () {
+                    return \Mockery::mock(ResponseInterface::class);
+                }
+            )
+            ->getMock();
+
+        $middleware3 = \Mockery::mock(MiddlewareInterface::class)
+            ->shouldReceive("process")
+            ->never()
+            ->getMock();
+
+        $reacon = new Reacon($middleware1, $middleware2, $middleware3);
+
+        $reacon->handle(\Mockery::mock(ServerRequestInterface::class));
+    }
+
+    public function testShouldRaiseExceptionIfThereIsNotMiddlewareThatCreatesResponseInThePipeline()
+    {
+        $this->expectException(LogicException::class);
+
+        $middleware1 = new class implements MiddlewareInterface {
+            public function process(
+                ServerRequestInterface $request,
+                RequestHandlerInterface $handler
+            ): ResponseInterface {
+                return $handler->handle($request);
+            }
+        };
+
+        $reacon = new Reacon($middleware1);
+
+        $reacon->handle(\Mockery::mock(ServerRequestInterface::class));
+    }
+
+    public function testShouldBeMiddlewareInstance()
+    {
+        $reacon = new Reacon(\Mockery::mock(MiddlewareInterface::class));
 
         $this->assertInstanceOf(MiddlewareInterface::class, $reacon);
     }
 
     public function testShouldBeUsedAsMiddleware()
     {
-        $request = $this->createMock(ServerRequestInterface::class);
-
-        $middleware1 = $this->createMock(MiddlewareInterface::class);
-        $middleware1->expects($this->once())
-            ->method("process")
-            ->willReturnCallback(
-                function(
-                    \Psr\Http\Message\ServerRequestInterface $request,
-                    RequestHandlerInterface $handler
-                ) {
+        $middleware1 = \Mockery::mock(MiddlewareInterface::class)
+            ->shouldReceive("process")
+            ->once()
+            ->andReturnUsing(
+                function (ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
+                {
                     return $handler->handle($request);
                 }
-            );
+            )
+            ->getMock();
 
-        $middleware2 = $this->createMock(MiddlewareInterface::class);
-        $middleware2->expects($this->once())
-            ->method("process")
-            ->with($request)
-            ->willReturnCallback(
-                function(
-                    \Psr\Http\Message\ServerRequestInterface $request,
-                    RequestHandlerInterface $handler
-                ) {
-                    return $this->createMock(ResponseInterface::class);
+        $reacon1 = new Reacon($middleware1);
+
+        $middleware2 = \Mockery::mock(MiddlewareInterface::class)
+            ->shouldReceive("process")
+            ->once()
+            ->andReturnUsing(
+                function () {
+                    return \Mockery::mock(ResponseInterface::class);
                 }
-            );
-
-        $reacon1 = new Reacon(
-            [
-                $middleware1,
-                $middleware2,
-            ]
-        );
-
-        $middleware3 = $this->createMock(MiddlewareInterface::class);
-        $middleware3->expects($this->once())
-            ->method("process")
-            ->with($request)
-            ->willReturnCallback(
-                function(
-                    \Psr\Http\Message\ServerRequestInterface $request,
-                    RequestHandlerInterface $handler
-                ) {
-                    return $handler->handle($request);
-                }
-            );
+            )
+            ->getMock();
 
         $reacon2 = new Reacon(
-            [
-                $middleware3,
-                $reacon1,
-            ]
+            $reacon1,
+            $middleware2
         );
 
-        $response = $reacon2->handle($request);
-
-        $this->assertInstanceOf(ResponseInterface::class, $response);
+        $reacon2->handle(\Mockery::mock(ServerRequestInterface::class));
     }
 }

@@ -4,7 +4,7 @@ Reacon
 [![Build Status](https://travis-ci.org/ztsu/reacon.svg?branch=master)](https://travis-ci.org/ztsu/reacon)
 [![Coverage Status](https://coveralls.io/repos/github/ztsu/reacon/badge.svg?branch=master)](https://coveralls.io/github/ztsu/reacon?branch=master)
 
-The simplest PSR-15 complaint middleware runner on top of [ztsu/pipe](https://github.com/ztsu/pipe).
+The simplest PSR-15 complaint middleware runner.
 
 The [PSR-15](https://www.php-fig.org/psr/psr-15/) providers a standard
 for recommendations that defines the interface for server middleware-component compatible with
@@ -32,13 +32,23 @@ use Psr\Http\Message\ServerRequestInterface;
 use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 
+class CreateRequestMiddleware implements MiddlewareInterface
+{
+    public function process(
+        ServerRequestInterface $request,
+        RequestHandlerInterface $handler
+    ): ResponseInterface {
+        return new Zend\Diactoros\Response();
+    }
+}
+
 class HelloMiddleware implements MiddlewareInterface
 {
     public function process(
         ServerRequestInterface $request,
         RequestHandlerInterface $handler
     ): ResponseInterface {
-        $response = new Zend\Diactoros\Response();
+        $response = $handler->handle($request);
 
         $response->getBody()->write("Hello, World!");
 
@@ -47,9 +57,8 @@ class HelloMiddleware implements MiddlewareInterface
 }
 
 $reacon = new Ztsu\Reacon\Reacon(
-    [
-        new HelloMiddleware(),
-    ]
+    new HelloMiddleware(),
+    new CreateRequestMiddleware()
 );
 
 $request = Zend\Diactoros\ServerRequestFactory::fromGlobals();
